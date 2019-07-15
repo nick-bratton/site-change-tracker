@@ -1,0 +1,15 @@
+{
+	"name": "sensory-minds",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {},
+	"dependencies": {
+		"@sendgrid/mail": "^6.4.0",
+		"cron": "^1.7.1",
+		"googleapis": "^39.2.0",
+		"mongodb": "^3.2.7",
+		"request": "^2.88.0",
+		"request-promise": "^4.2.4"
+	},
+	"devDependencies": {}
+}
