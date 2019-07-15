@@ -4,7 +4,8 @@ const {google} = require('googleapis');
 const scope = ['https://www.googleapis.com/auth/spreadsheets'];
 const credentialsPath = 'private/credentials.json'
 const tokenPath = 'private/token.json';
-const spreadsheetId = '1IS7LM462eGPgKjNhAVFW_4BwcbW4hEH9VW3vub_7z3o'
+const sheetsConfig = require('./private/sheets.json');
+const spreadsheetId = sheetsConfig.id;
 let token;
 
 fs.readFileAsync = function(path){
