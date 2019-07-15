@@ -1,73 +1,97 @@
 const Mongo = require('mongodb').MongoClient;
-const assert = require('assert');
 const mongoConfig = require('./private/mongo')
 const mongoUrl = mongoConfig.url;
 
-async function detectChange(incomingEtag){
-	let lastEtag, changed;
-	await getPreviousDocumentFromMongo('events')
-	.then(doc => {
-		lastEtag = doc.etag;
-		if (doc.etag == undefined){	// should be removed...
-			lastEtag = 'dummy';				// this was a dev hack to get around
-			console.log();						// changing my schema midway
-			console.log('just set dummy')
-		}
-		changed = (lastEtag !== incomingEtag) && (lastEtag != undefined) && (incomingEtag != undefined);
-		if (changed){
-			directChangesToSheets(incomingEtag);
-		}
-	})
-}
-
-function directChangesToSheets(go){
-	console.log('go??', go);
-	gapi.insertDocumentToSheets(dataSheets);
-	insertDocumentToMongo(dataMongo);
-}
-
-const insert = function(db, data, callback){
-	// create an 'events' collection if one doesn't exist yet
-	if (db.collection('events') === null || db.collection('events') === undefined){
-		db.createCollection('events', function(err, res) {
-			assert.equal(null,err);
-			console.log('Collection created!');
-		});
-	}
-	// insert
-	db.collection('events').insertOne(
-		{
-			date: data.date,
-			statusCode: data.statusCode,
-			etag: data.etag
-		}, 
-		function(err, result){
-			assert.equal(err, null);
-			console.log('Successfully inserted document.');
-			callback(result);
-		}
-	)
-}
-
-function insertDocumentToMongo(data){
-	Mongo.connect(mongoUrl, function(err,client){
-		assert.equal(null,err);
-		insert(client.db(), data, function(result){
-			// console.log(result);
-			// client.close();
-			// console.log("Closed connection to the MongoDB server.");
-		});
-	});
-}
-
-async function getPreviousDocumentFromMongo(coll){
+async function getPreviousDocumentFromMongo(collName){
 	return Mongo.connect(mongoUrl)
 		.then(client => client.db()
-			.collection('events')
+			.collection(collName)
 			.find()
 			.sort(['_id', -1])
 			.limit(1)
 			.toArray()
-			.then(data => (client.close(), data)))
+			.then(doc => (client.close(), doc) ))
+		.catch(err => console.log('Error getting previous document from database: ' + err));
+}
+
+async function isEtagUnique(incomingEtag, collName){
+	return new Promise(async (resolve,reject) => {
+		await getPreviousDocumentFromMongo(collName)
+		.then(previousDoc => {
+			console.log(previousDoc[0].etag, incomingEtag)
+			if (previousDoc[0].etag !== incomingEtag){
+				resolve(true);
+			}
+			else{
+				resolve(false);
+			}
+		})
+	})
+}
+
+async function doesCollectionExist(collName){
+	return new Promise((resolve,reject) => {
+		Mongo.connect(mongoUrl)
+		.then(client => client.db()
+			.listCollections()//{name: 'events'}
+			.toArray()
+			.then(cols => {
+				let exists = false;
+				for (col of cols){
+					if (col.name == collName){
+						exists = true; 
+						resolve(true);
+					}
+				}
+				if (!exists){
+					resolve(false);
+				}
+			})
+		)
+	})
+}
+
+async function initializeCollection(collName){
+	return Mongo.connect(mongoUrl)
+		.then(client => client.db()
+			.createCollection(collName)//,function(err,res){
+			.then(response => (client.close(), response) ))
+		.catch(err => console.log(`Error initializing collection ' + "${collName}"`));
+}
+
+async function insertDocumentToMongo (res, collName){
+	return Mongo.connect(mongoUrl)
+	.then(client => client.db().collection(collName)
+		.insertOne(
+			{ 
+				date: res.headers.date,
+				statusCode: res.statusCode,
+				etag: res.headers.etag
+			})
+		.then(data => client.close(), res))
 		.catch(err => console.log('GOT ERROR' + err));
+}
+
+exports.checkEtag = async(res) => {
+	const collName = 'foo10';
+	return new Promise(async (resolve,reject) => {
+		let collExists = await doesCollectionExist(collName);
+		if (collExists){
+			let etagIsUnique = await isEtagUnique(res.headers.etag, collName);
+			if (etagIsUnique){
+				resolve({'res': res, 'type':'update'});
+			}
+			else {
+				resolve({'res': res, 'type':'ignore'});
+			}
+		}
+		else{
+			initializeCollection(collName)
+			.then(async => {
+				insertDocumentToMongo(res, collName).then(async => {
+					resolve({'res': res, 'type':'init'})
+				})
+			})
+		}	
+	})
 }
