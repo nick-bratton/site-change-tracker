@@ -18,7 +18,6 @@ async function isEtagUnique(incomingEtag, collName){
 	return new Promise(async (resolve,reject) => {
 		await getPreviousDocumentFromMongo(collName)
 		.then(previousDoc => {
-			console.log(previousDoc[0].etag, incomingEtag)
 			if (previousDoc[0].etag !== incomingEtag){
 				resolve(true);
 			}
@@ -33,7 +32,7 @@ async function doesCollectionExist(collName){
 	return new Promise((resolve,reject) => {
 		Mongo.connect(mongoUrl)
 		.then(client => client.db()
-			.listCollections()//{name: 'events'}
+			.listCollections()
 			.toArray()
 			.then(cols => {
 				let exists = false;
@@ -54,7 +53,7 @@ async function doesCollectionExist(collName){
 async function initializeCollection(collName){
 	return Mongo.connect(mongoUrl)
 		.then(client => client.db()
-			.createCollection(collName)//,function(err,res){
+			.createCollection(collName)
 			.then(response => (client.close(), response) ))
 		.catch(err => console.log(`Error initializing collection ' + "${collName}"`));
 }
@@ -79,7 +78,9 @@ exports.checkEtag = async(res) => {
 		if (collExists){
 			let etagIsUnique = await isEtagUnique(res.headers.etag, collName);
 			if (etagIsUnique){
-				resolve({'res': res, 'type':'update'});
+				insertDocumentToMongo(res, collName).then(async => {
+					resolve({'res': res, 'type':'update'})
+				})
 			}
 			else {
 				resolve({'res': res, 'type':'ignore'});

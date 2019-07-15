@@ -15,36 +15,19 @@ let reqOptions = {
 	}
 };
 
-
-
 async function handleResponse(res){
-	let checkEtagAginstCollection = await mongo.checkEtag(res);
-	console.log(checkEtagAginstCollection.type);
-
-	// if (etagIsNewOrDbWasEmpty){
-	// 	console.log('New etag + response: ' + etagIsNewOrDbWasEmpty);
-	// 	saveChangeAndNotify(res)
-	// }
-	// else {
-
-	// 	console.log('No changes at this time.');
-	// }
-}
-
-
-
-
-
-function saveChangeAndNotify(res, justInitialized){
-	// gapi.insertDocumentToSheets([res.headers.date, res.statusCode.toString(), res.headers.etag]);
-	// mongo.insertDocumentToMongo({"date": res.headers.date, "statusCode": res.statusCode, "etag": res.headers.etag});
-	
-	// !!! DEFINE THIS !!!
-	if (justInitialized === true){
-		email.sendInitializationEmail()
-	}
-	else if (justInitialized === false){
-		email.sendUpdateEmail()
+	let filter = await mongo.checkEtag(res);
+	switch (filter.type){
+		case 'init':
+			gapi.insertDocumentToSheets([res.headers.date, res.statusCode.toString(), res.headers.etag]);
+			email.sendEmail('init', reqOptions.uri)
+			break;
+		case 'update':
+			gapi.insertDocumentToSheets([res.headers.date, res.statusCode.toString(), res.headers.etag]);
+			email.sendEmail('update', reqOptions.uri)
+			break;
+		case 'ignore':
+			break;
 	}
 }
 
@@ -57,8 +40,6 @@ function visitSite(options){
 			console.log(err);
 		});
 }
-
-
 
 new Cron('*/3 * * * * *', function() {
 	visitSite(reqOptions);

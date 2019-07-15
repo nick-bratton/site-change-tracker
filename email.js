@@ -6,8 +6,8 @@ sg.setApiKey(sgKey);
 
 const sgList = require('./private/addresses.json');
 const addressList = sgList.addresses;
-
 let addresses = [];
+
 for (let key in addressList) {
 	if (addressList.hasOwnProperty(key)) {
 		let val = addressList[key];
@@ -15,28 +15,28 @@ for (let key in addressList) {
 	}
 }
 
-exports.sendEmail = () => {
-	const msg = {
-		to: addresses,
-		from: sgSender,
-		subject: 'Sending with Twilio SendGrid is Fun',
-		text: "This was sent to multiple recipients"
-		// html: '',
-	};
+const msg = {
+	to: addresses,
+	from: sgSender,
+	subject: '',
+	text: '',
+};
+
+exports.sendEmail = (type, uri) => {
+	switch (type){
+		case 'init': 
+			msg.subject = `Site tracking enabled for ${uri}`;
+			msg.text = `You will receive email notifications when changes to the content at ${uri} are detected.`;
+		case 'update':
+			msg.subject = `Update Notification`;
+			msg.text = `You requested to be notified when the content at ${uri} changed. The server replied with a new HTTP etag, highly suggesting that the HTML has been updated.`;
+	}
 	sg
 		.sendMultiple(msg)
 			.then(() => {
 				console.log('email sent')
 			})
 			.catch(error => {
-
-				//Log friendly error
 				console.error(error.toString());
-
-				//Extract error msg
-				const {message, code, response} = error;
-
-				//Extract response msg
-				const {headers, body} = response;
 			});
 }
