@@ -1,11 +1,11 @@
+require('dotenv').config();
 const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
 const scope = ['https://www.googleapis.com/auth/spreadsheets'];
 const credentialsPath = 'private/credentials.json'
 const tokenPath = 'private/token.json';
-const sheetsConfig = require('./private/sheets.json');
-const spreadsheetId = sheetsConfig.id;
+const spreadsheetId = process.env.SPREADSHEETID;
 let token;
 
 fs.readFileAsync = function(path){
@@ -114,7 +114,6 @@ async function getNextEmptyRow(client){
 }
 
 async function writeToRow(client, row, data){
-	console.log(data);
 	return new Promise((resolve, reject) => {
 		const sheets = google.sheets({version: 'v4', client});
 
@@ -146,7 +145,7 @@ exports.insertDocumentToSheets = async(data) => {
 	})
 	.then(async => {
 		writeToRow(client, row, data)
-	}, reason => {
-		console.log(reason);
+	}, err => {
+		console.log(err);
 	});
 }

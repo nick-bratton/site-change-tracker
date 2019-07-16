@@ -1,5 +1,6 @@
 #!/usr/bin/env nodejs
 'use strict';
+require('dotenv').config()
 
 const gapi = require('./gapi');
 const mongo = require('./mongo')
@@ -9,7 +10,7 @@ const Cron = require('cron').CronJob;
 
 let reqOptions = {
 	resolveWithFullResponse: true,
-	uri: 'http://localhost:3030',
+	uri: process.env.URI,
 	headers: {
 		'Cache-Control': 'no-cache'
 	}
@@ -41,6 +42,6 @@ function visitSite(options){
 		});
 }
 
-new Cron('*/3 * * * * *', function() {
+new Cron(`*/${process.env.XSECONDS} * * * * *`, function() {
 	visitSite(reqOptions);
 }, null, true, 'Europe/Berlin');

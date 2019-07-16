@@ -1,7 +1,7 @@
+require('dotenv').config();
 const sg = require('@sendgrid/mail');
-const sgCred = require('./private/sg.json');
-const sgKey = sgCred.key;
-const sgSender = sgCred.sender;
+const sgKey = process.env.SGKEY
+const sgSender = process.env.SGSENDER;
 sg.setApiKey(sgKey);
 
 const sgList = require('./private/addresses.json');
@@ -34,7 +34,8 @@ exports.sendEmail = (type, uri) => {
 	sg
 		.sendMultiple(msg)
 			.then(() => {
-				console.log('email sent')
+				console.log();
+				console.log('Email sent');
 			})
 			.catch(error => {
 				console.error(error.toString());

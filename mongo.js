@@ -1,9 +1,9 @@
+require('dotenv').config();
 const Mongo = require('mongodb').MongoClient;
-const mongoConfig = require('./private/mongo')
-const mongoUrl = mongoConfig.url;
+const mongoUrl = process.env.MONGOURL;
 
 async function getPreviousDocumentFromMongo(collName){
-	return Mongo.connect(mongoUrl)
+	return Mongo.connect(mongoUrl, { useNewUrlParser: true })
 		.then(client => client.db()
 			.collection(collName)
 			.find()
@@ -30,7 +30,7 @@ async function isEtagUnique(incomingEtag, collName){
 
 async function doesCollectionExist(collName){
 	return new Promise((resolve,reject) => {
-		Mongo.connect(mongoUrl)
+		Mongo.connect(mongoUrl, { useNewUrlParser: true })
 		.then(client => client.db()
 			.listCollections()
 			.toArray()
@@ -51,7 +51,7 @@ async function doesCollectionExist(collName){
 }
 
 async function initializeCollection(collName){
-	return Mongo.connect(mongoUrl)
+	return Mongo.connect(mongoUrl, { useNewUrlParser: true })
 		.then(client => client.db()
 			.createCollection(collName)
 			.then(response => (client.close(), response) ))
@@ -59,7 +59,7 @@ async function initializeCollection(collName){
 }
 
 async function insertDocumentToMongo (res, collName){
-	return Mongo.connect(mongoUrl)
+	return Mongo.connect(mongoUrl, { useNewUrlParser: true })
 	.then(client => client.db().collection(collName)
 		.insertOne(
 			{ 

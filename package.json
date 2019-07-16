@@ -2,10 +2,13 @@
 	"name": "sensory-minds",
 	"version": "0.1.0",
 	"private": true,
-	"scripts": {},
+	"scripts": {
+		"start": "node app.js"
+	},
 	"dependencies": {
 		"@sendgrid/mail": "^6.4.0",
 		"cron": "^1.7.1",
+		"dotenv": "^8.0.0",
 		"googleapis": "^39.2.0",
 		"mongodb": "^3.2.7",
 		"request": "^2.88.0",
