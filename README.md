@@ -1,4 +1,4 @@
-# Sensory Minds Code Challenge 2
+# Site Update Tracker
 
 ## Table of Contents
 
